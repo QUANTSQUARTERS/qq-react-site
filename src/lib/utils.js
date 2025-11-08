@@ -1,22 +1,22 @@
-export function groupByGenre(books) {
-  const genresMap = {};
+export function groupByLeague(teams) {
+  const leaguesMap = {};
 
-  // Group books by genre
-  books.forEach((book) => {
-    if (book.genre) {
-      if (!genresMap[book.genre]) {
-        genresMap[book.genre] = [];
+  // Group teams by league
+  teams.forEach((team) => {
+    if (team.league_name) {
+      if (!leaguesMap[team.league_name]) {
+        leaguesMap[team.league_name] = [];
       }
-      genresMap[book.genre].push(book);
+      leaguesMap[team.league_name].push(team);
     }
   });
 
   // Convert to sorted array
-  return Object.entries(genresMap)
-    .map(([name, books]) => ({
+  return Object.entries(leaguesMap)
+    .map(([name, teams]) => ({
       name,
-      count: books.length,
-      books,
+      count: teams.length,
+      teams,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }

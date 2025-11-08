@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import postgres from "postgres";
-import booksRouter from "./routes/books";
-import bookRelatedRouter from "./routes/book-related";
-import { mockBooks } from "./lib/mockData";
+import teamsRouter from "./routes/teams";
+import teamRelatedRouter from "./routes/team-related";
+import footballDataRouter from "./routes/football-data";
+import { mockTeams } from "./lib/mockData";
 
 const app = new Hono();
 
@@ -28,20 +29,21 @@ app.use("*", async (c, next) => {
     } catch (error) {
       console.error("Database connection error:", error);
       c.env.DB_AVAILABLE = false;
-      c.env.MOCK_DATA = mockBooks;
+      c.env.MOCK_DATA = mockTeams;
       await next();
     }
   } else {
     // No Hyperdrive binding available, use mock data
     console.log("No database connection available. Using mock data.");
     c.env.DB_AVAILABLE = false;
-    c.env.MOCK_DATA = mockBooks;
+    c.env.MOCK_DATA = mockTeams;
     await next();
   }
 });
 
-app.route("/api/books", booksRouter);
-app.route("/api/books/:id/related", bookRelatedRouter);
+app.route("/api/teams", teamsRouter);
+app.route("/api/teams/:id/related", teamRelatedRouter);
+app.route("/api/football-data", footballDataRouter);
 
 // Catch-all route for static assets
 app.all("*", async (c) => {

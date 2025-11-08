@@ -8,10 +8,10 @@ function Breadcrumbs({ items, onNavigate }) {
 
         // Determine the appropriate link based on the item value
         let linkTo = "/";
-        if (item.value && item.value !== "book") {
-          linkTo = `/genre/${encodeURIComponent(item.value)}`;
-        } else if (item.value === "book") {
-          linkTo = null; // Current book page, no link
+        if (item.value && item.value !== "team") {
+          linkTo = `/league/${encodeURIComponent(item.value)}`;
+        } else if (item.value === "team") {
+          linkTo = null; // Current team page, no link
         }
 
         return (

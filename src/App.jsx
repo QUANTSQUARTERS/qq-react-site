@@ -1,75 +1,75 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { groupByGenre } from "./lib/utils";
+import { groupByLeague } from "./lib/utils";
 import Breadcrumbs from "./components/Breadcrumbs";
 import Sidebar from "./components/Sidebar";
-import BooksList from "./components/BooksList";
-import BookDetail from "./components/BookDetail";
+import TeamsList from "./components/TeamsList";
+import TeamDetail from "./components/TeamDetail";
 import MockDataBanner from "./components/MockDataBanner";
 
 function App() {
   const navigate = useNavigate();
   const params = useParams();
-  const [bookDetail, setBookDetail] = useState(null);
+  const [teamDetail, setTeamDetail] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [genres, setGenres] = useState([]);
+  const [leagues, setLeagues] = useState([]);
   const [dataSource, setDataSource] = useState(null);
 
   // Get route parameters
-  const { bookId } = params;
-  const { genreId } = params;
-  const activeGenre = genreId ? decodeURIComponent(genreId) : null;
+  const { teamId } = params;
+  const { leagueId } = params;
+  const activeLeague = leagueId ? decodeURIComponent(leagueId) : null;
 
-  // Load genres for sidebar
+  // Load leagues for sidebar
   useEffect(() => {
-    const loadGenres = async () => {
+    const loadLeagues = async () => {
       try {
-        const response = await fetch("/api/books");
+        const response = await fetch("/api/teams");
         if (!response.ok) {
           throw new Error(`API returned status: ${response.status}`);
         }
         const data = await response.json();
 
-        if (!data.books?.length) {
-          console.error("No books data found:", typeof data);
+        if (!data.teams?.length) {
+          console.error("No teams data found:", typeof data);
           return;
         }
 
-        const booksArray = data.books;
+        const teamsArray = data.teams;
 
         // Check if using mock data or database
         if (data.source) {
           setDataSource(data.source);
         }
 
-        const genreGroups = groupByGenre(booksArray);
-        setGenres(genreGroups);
+        const leagueGroups = groupByLeague(teamsArray);
+        setLeagues(leagueGroups);
       } catch (error) {
-        console.error("Error loading genres:", error);
+        console.error("Error loading leagues:", error);
       }
     };
 
-    loadGenres();
+    loadLeagues();
   }, []);
 
-  // Load book details when a book is selected via URL
+  // Load team details when a team is selected via URL
   useEffect(() => {
-    if (!bookId) return;
+    if (!teamId) return;
 
-    const fetchBookDetail = async () => {
+    const fetchTeamDetail = async () => {
       setLoading(true);
       try {
-        // First get basic book details
-        const bookResponse = await fetch(`/api/books/${bookId}`);
+        // First get basic team details
+        const teamResponse = await fetch(`/api/teams/${teamId}`);
 
-        if (!bookResponse.ok) {
-          throw new Error(`API returned status: ${bookResponse.status}`);
+        if (!teamResponse.ok) {
+          throw new Error(`API returned status: ${teamResponse.status}`);
         }
 
-        const bookData = await bookResponse.json();
+        const teamData = await teamResponse.json();
 
-        // Then get related books data
-        const relatedResponse = await fetch(`/api/books/${bookId}/related`);
+        // Then get related teams data
+        const relatedResponse = await fetch(`/api/teams/${teamId}/related`);
 
         if (!relatedResponse.ok) {
           throw new Error(`API returned status: ${relatedResponse.status}`);
@@ -79,30 +79,30 @@ function App() {
 
         // Combine the data
         const combinedData = {
-          book: bookData.book,
-          relatedBooks: relatedData.relatedBooks,
+          team: teamData.team,
+          relatedTeams: relatedData.relatedTeams,
           recentRecommendations: relatedData.recentRecommendations,
-          genreStats: relatedData.genreStats,
+          leagueStats: relatedData.leagueStats,
         };
 
-        setBookDetail(combinedData);
+        setTeamDetail(combinedData);
       } catch (error) {
-        console.error("Error fetching book details:", error);
+        console.error("Error fetching team details:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBookDetail();
-  }, [bookId]);
+    fetchTeamDetail();
+  }, [teamId]);
 
-  const handleSelectBook = (bookId) => {
-    navigate(`/book/${bookId}`);
+  const handleSelectTeam = (teamId) => {
+    navigate(`/team/${teamId}`);
   };
 
-  const handleSelectGenre = (genre) => {
-    if (genre) {
-      navigate(`/genre/${encodeURIComponent(genre)}`);
+  const handleSelectLeague = (league) => {
+    if (league) {
+      navigate(`/league/${encodeURIComponent(league)}`);
     } else {
       navigate("/");
     }
@@ -111,56 +111,56 @@ function App() {
   return (
     <div className="layout">
       <Sidebar
-        genres={genres}
-        activeGenre={activeGenre}
-        onSelectGenre={handleSelectGenre}
+        leagues={leagues}
+        activeLeague={activeLeague}
+        onSelectLeague={handleSelectLeague}
         counts
       />
 
       <main className="main-content">
-        {/* Breadcrumbs for main library page */}
-        {!bookId && (
+        {/* Breadcrumbs for main teams page */}
+        {!teamId && (
           <Breadcrumbs
             items={[
-              { label: "All Books", value: null },
-              ...(activeGenre
-                ? [{ label: activeGenre, value: activeGenre }]
+              { label: "All Teams", value: null },
+              ...(activeLeague
+                ? [{ label: activeLeague, value: activeLeague }]
                 : []),
             ]}
             onNavigate={(value) => {
               if (value === null) {
-                handleSelectGenre(null);
+                handleSelectLeague(null);
               }
             }}
           />
         )}
 
         <div className="page-header">
-          <h1>{activeGenre ? `${activeGenre} Books` : "My Library"}</h1>
+          <h1>{activeLeague ? `${activeLeague} Teams` : "Soccer Analytics"}</h1>
           <p className="text-gray-900">
-            {activeGenre
-              ? `Explore our collection of ${activeGenre.toLowerCase()} books`
-              : "Discover your next favorite book"}
+            {activeLeague
+              ? `Explore teams in ${activeLeague}`
+              : "Discover teams, leagues, and soccer statistics"}
           </p>
 
           {/* Show banner only when using mock data */}
           {dataSource === "mock" && <MockDataBanner />}
         </div>
 
-        {bookId ? (
+        {teamId ? (
           loading ? (
             <div className="flex justify-center items-center py-20">
               <div className="h-10 w-10 border-2 border-blue-800 border-t-transparent rounded-full animate-spin"></div>
             </div>
-          ) : bookDetail ? (
-            <BookDetail bookData={bookDetail} />
+          ) : teamDetail ? (
+            <TeamDetail teamData={teamDetail} />
           ) : (
             <div className="text-center py-20 text-gray-600">
-              Error loading book details
+              Error loading team details
             </div>
           )
         ) : (
-          <BooksList onSelectBook={handleSelectBook} filter={activeGenre} />
+          <TeamsList onSelectTeam={handleSelectTeam} filter={activeLeague} />
         )}
       </main>
     </div>

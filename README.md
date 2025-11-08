@@ -1,29 +1,30 @@
-# React + Vite + PostgreSQL + Hyperdrive on Cloudflare Workers
+# Soccer Analytics Website - React + Vite + PostgreSQL + Hyperdrive on Cloudflare Workers
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/react-postgres-fullstack-template)
 
-![Build a library of books using Cloudflare Workes Assets, Hono, and Hyperdrive](https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/cd71c67a-253f-477d-022c-2f90cb4b3d00/public)
+![Soccer Analytics Website using Cloudflare Workers Assets, Hono, and Hyperdrive](https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/cd71c67a-253f-477d-022c-2f90cb4b3d00/public)
 
 <!-- dash-content-start -->
 
-Build a library of books using [Cloudflare Workers Assets](https://developers.cloudflare.com/workers/static-assets/), Hono API routes, and [Cloudflare Hyperdrive](https://developers.cloudflare.com/hyperdrive/) to connect to a PostgreSQL database. [Workers Smart Placement](https://developers.cloudflare.com/workers/configuration/smart-placement/) is enabled to automatically position your Worker closer to your database for reduced latency.
+Build a soccer analytics website using [Cloudflare Workers Assets](https://developers.cloudflare.com/workers/static-assets/), Hono API routes, and [Cloudflare Hyperdrive](https://developers.cloudflare.com/hyperdrive/) to connect to a PostgreSQL database. This application integrates with the [FootyStats API](https://footystats.org) for live soccer data and can also use data stored in PostgreSQL or S3. [Workers Smart Placement](https://developers.cloudflare.com/workers/configuration/smart-placement/) is enabled to automatically position your Worker closer to your database for reduced latency.
 
-Browse a categorized collection of books in this application. To learn more about a title, click on it to navigate to an expanded view. The collection can also be filtered by genre. If a custom database connection is not provided, a fallback set of books will be used.
+Browse teams, leagues, and soccer statistics in this application. Click on a team to view detailed information including related teams in the same league. The collection can be filtered by league. If a custom database connection is not provided, a fallback set of mock teams will be used.
 
-If creating a personal database, books are expected to be stored in the following format:
-
-```sql
-(INDEX, 'BOOK_TITLE', 'BOOK_AUTHOR', 'BOOK_DESCRIPTION', '/images/books/BOOK_COVER_IMAGE.jpg', 'BOOK_GENRE')
-```
+The database schema supports teams, leagues, matches, players, and team statistics. Data can be sourced from:
+- **FootyStats API**: Live soccer data via API endpoints
+- **PostgreSQL**: Stored team, league, and match data
+- **S3**: Large datasets, backups, or media files
 
 ## Features
 
-- 📖 Dynamic routes
-- 📦 Asset bundling and optimization
+- ⚽ Team and league browsing
+- 📊 Soccer statistics and analytics
 - 🌐 Optimized Worker placement
 - 🚀 Database connection via Hyperdrive
 - 🎉 TailwindCSS for styling
 - 🐳 Docker for container management
+- 🔌 FootyStats API integration ready
+- 📦 S3 storage support for media and data
 
 ## Smart Placement Benefits
 
@@ -31,7 +32,7 @@ This application uses Cloudflare Workers' [Smart Placement](https://developers.c
 
 - **What is Smart Placement?** Smart Placement [can dynamically position](https://developers.cloudflare.com/workers/configuration/smart-placement/#understand-how-smart-placement-works) your Worker in Cloudflare's network to minimize latency between your Worker and database.
 
-- **How does it work?** The application makes multiple database round trips per request. Smart Placement analyzes this traffic pattern and can choose to position the Worker and Hyperdrive closer to your deployed database to reduce latency. This can significantly improve response times, especially for read-intensive operations requiring multiple database queries — as demonstrated in this application's book-related API endpoints.
+- **How does it work?** The application makes multiple database round trips per request. Smart Placement analyzes this traffic pattern and can choose to position the Worker and Hyperdrive closer to your deployed database to reduce latency. This can significantly improve response times, especially for read-intensive operations requiring multiple database queries — as demonstrated in this application's team-related API endpoints.
 
 - **No configuration needed:** Smart Placement works automatically when enabled in `wrangler.jsonc` with `"mode": "smart"`.
 
@@ -46,14 +47,30 @@ This application uses Cloudflare Workers' [Smart Placement](https://developers.c
 - **Backend**: API routes served by a Worker using [Hono](https://hono.dev/)
   - API endpoints defined in `/api/routes` directory
   - Automatic fallback to mock data when database is unavailable
+  - FootyStats API integration support
 
 - **Database**: PostgreSQL database connected via Cloudflare Hyperdrive
   - Smart Placement enabled for optimal performance
   - Handles missing connection strings or connection failures
+  - Schema supports teams, leagues, matches, players, and statistics
+
+- **Data Sources**:
+  - FootyStats API for live soccer data
+  - PostgreSQL for persistent data storage
+  - S3 for media files and large datasets
+
+## Database Schema
+
+The application uses the following main tables:
+- `leagues` - Soccer leagues (Premier League, La Liga, etc.)
+- `teams` - Soccer teams with league associations
+- `matches` - Match results and fixtures
+- `players` - Player information
+- `team_statistics` - Team performance statistics
 
 ## Get Started
 
-To run the applicaton locally, use the Docker container defined in `docker-compose.yml`:
+To run the application locally, use the Docker container defined in `docker-compose.yml`:
 
 1. `docker-compose up -d`
    - Creates container with PostgreSQL and seeds it with the data found in `init.sql`
@@ -101,6 +118,17 @@ Cloudflare's Hyperdrive is database connector that optimizes queries from your W
 
 For a more detailed walkthrough, see the [Hyperdrive documentation](https://developers.cloudflare.com/hyperdrive/configuration/connect-to-postgres/).
 
+### Setting Up FootyStats API
+
+To integrate with the FootyStats API:
+
+1. Sign up for a FootyStats API key at [footystats.org](https://footystats.org)
+2. Add your API key to your environment variables:
+   ```sh
+   wrangler secret put FOOTYSTATS_API_KEY
+   ```
+3. The API utility functions in `api/lib/utils.js` are ready to use for fetching live data
+
 ### More on Docker's Use in Local Development
 
 When developing locally with Hyperdrive, you **must** use the Docker setup provided. This is because Hyperdrive's local dev mode requires a database running on localhost with the exact configuration specified in `localConnectionString`.
@@ -137,7 +165,11 @@ There are two different ways to deploy this application: Full Experience and Dem
      }
    ]
    ```
-6. Deploy with `npm run deploy`
+6. (Optional) Configure FootyStats API key:
+   ```sh
+   wrangler secret put FOOTYSTATS_API_KEY
+   ```
+7. Deploy with `npm run deploy`
 
 ### Option 2: Without Database (Demo Mode)
 
@@ -153,3 +185,4 @@ There are two different ways to deploy this application: Full Experience and Dem
 - [Cloudflare Hyperdrive Documentation](https://developers.cloudflare.com/hyperdrive/get-started/)
 - [Hono - Fast, Lightweight, Web Framework for Cloudflare Workers](https://hono.dev/docs/getting-started/cloudflare-workers)
 - [Workers Smart Placement](https://developers.cloudflare.com/workers/configuration/smart-placement/)
+- [FootyStats API Documentation](https://footystats.org/api/)

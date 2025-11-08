@@ -1,40 +1,72 @@
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 
-function Sidebar({ genres, activeGenre, counts }) {
+function Sidebar({ leagues, activeLeague, counts }) {
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  const isActive = (path) => {
+    if (path === "/") {
+      return currentPath === "/" && !activeLeague;
+    }
+    return currentPath.startsWith(path);
+  };
+
   return (
     <aside className="sidebar">
-      <div className="sidebar-title">Library</div>
+      <div className="sidebar-title">Soccer Analytics</div>
 
       <nav className="sidebar-nav">
         <Link
           to="/"
           className={
-            activeGenre === null ? "sidebar-link-active" : "sidebar-link"
+            currentPath === "/" && !activeLeague
+              ? "sidebar-link-active"
+              : "sidebar-link"
           }
         >
-          All Books
+          All Teams
         </Link>
 
         <div className="sidebar-section">
-          <div className="sidebar-heading">Genres</div>
-          {genres.map((genre) => (
+          <div className="sidebar-heading">Leagues</div>
+          {leagues.map((league) => (
             <Link
-              key={genre.name}
-              to={`/genre/${encodeURIComponent(genre.name)}`}
+              key={league.name}
+              to={`/league/${encodeURIComponent(league.name)}`}
               className={
-                activeGenre === genre.name
+                activeLeague === league.name
                   ? "sidebar-link-active"
                   : "sidebar-link"
               }
             >
-              {genre.name}
+              {league.name}
               {counts && (
                 <span className="ml-2 text-xs text-gray-900">
-                  ({genre.count})
+                  ({league.count})
                 </span>
               )}
             </Link>
           ))}
+        </div>
+
+        <div className="sidebar-section">
+          <div className="sidebar-heading">Analytics</div>
+          <Link
+            to="/matches"
+            className={
+              isActive("/matches") ? "sidebar-link-active" : "sidebar-link"
+            }
+          >
+            Upcoming Matches
+          </Link>
+          <Link
+            to="/analytics"
+            className={
+              isActive("/analytics") ? "sidebar-link-active" : "sidebar-link"
+            }
+          >
+            Distribution Graphs
+          </Link>
         </div>
       </nav>
 
@@ -49,6 +81,15 @@ function Sidebar({ genres, activeGenre, counts }) {
             className="text-blue-800 hover:underline"
           >
             Cloudflare
+          </a>
+          <br />
+          <a
+            href="https://www.football-data-api.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-800 hover:underline"
+          >
+            Football Data API
           </a>
         </div>
       </div>

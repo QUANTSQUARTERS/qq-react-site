@@ -24,93 +24,124 @@ export async function selectDataSource(c, dbLogic, mockLogic) {
 }
 
 /**
- * Contains mock data logic functions for book-related endpoints
+ * Fetches data from FootyStats API
+ * @param {string} endpoint - API endpoint path
+ * @param {object} options - Fetch options
+ * @returns {Promise<object>} API response data
  */
-export const bookRelatedMockUtils = {
+export async function fetchFootyStatsAPI(endpoint, options = {}) {
+  const API_KEY = options.apiKey || process.env.FOOTYSTATS_API_KEY;
+  const BASE_URL = options.baseUrl || "https://api.footystats.org/v3";
+
+  if (!API_KEY) {
+    throw new Error("FootyStats API key not configured");
+  }
+
+  const url = `${BASE_URL}${endpoint}`;
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      "X-RapidAPI-Key": API_KEY,
+      "X-RapidAPI-Host": "footystats.org",
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`FootyStats API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Contains mock data logic functions for team-related endpoints
+ */
+export const teamRelatedMockUtils = {
   /**
-   * Generates mock related books response
+   * Generates mock related teams response
    * @param {object} c - Hono context
-   * @param {string} bookId - Book ID to fetch related data for
+   * @param {string} teamId - Team ID to fetch related data for
    * @returns {Response} Mock API response
    */
-  getRelatedBookData: async (c, bookId) => {
-    const bookIdNum = parseInt(bookId, 10);
-    const book = c.env.MOCK_DATA.find((book) => book.id === bookIdNum);
+  getRelatedTeamData: async (c, teamId) => {
+    const teamIdNum = parseInt(teamId, 10);
+    const team = c.env.MOCK_DATA.find((team) => team.id === teamIdNum);
 
-    if (!book) {
-      return Response.json({ error: "Book not found" }, { status: 404 });
+    if (!team) {
+      return Response.json({ error: "Team not found" }, { status: 404 });
     }
 
-    const bookGenre = book.genre;
+    const teamLeague = team.league_name;
 
     // Generate mock related data
-    const relatedBooks = c.env.MOCK_DATA.filter(
-      (b) => b.genre === bookGenre && b.id !== bookIdNum,
+    const relatedTeams = c.env.MOCK_DATA.filter(
+      (t) => t.league_name === teamLeague && t.id !== teamIdNum,
     ).slice(0, 3);
 
-    // Generate mock recent books
-    const recentBooks = c.env.MOCK_DATA.filter((b) => b.id !== bookIdNum).slice(
+    // Generate mock recent teams
+    const recentTeams = c.env.MOCK_DATA.filter((t) => t.id !== teamIdNum).slice(
       0,
       2,
     );
 
-    // Generate mock genre counts
-    const genres = {};
-    c.env.MOCK_DATA.forEach((b) => {
-      genres[b.genre] = (genres[b.genre] || 0) + 1;
+    // Generate mock league counts
+    const leagues = {};
+    c.env.MOCK_DATA.forEach((t) => {
+      leagues[t.league_name] = (leagues[t.league_name] || 0) + 1;
     });
 
-    const genreCounts = Object.entries(genres)
-      .map(([genre, count]) => ({
-        genre,
+    const leagueCounts = Object.entries(leagues)
+      .map(([league, count]) => ({
+        league: league,
         count,
       }))
       .sort((a, b) => b.count - a.count);
 
     return Response.json({
-      bookId: bookId,
-      bookGenre: bookGenre,
-      relatedBooks,
-      recentRecommendations: recentBooks,
-      genreStats: genreCounts,
+      teamId: teamId,
+      teamLeague: teamLeague,
+      relatedTeams,
+      recentRecommendations: recentTeams,
+      leagueStats: leagueCounts,
       source: "mock",
     });
   },
 };
 
 /**
- * Contains mock data logic functions for books endpoints
+ * Contains mock data logic functions for teams endpoints
  */
-export const booksMockUtils = {
+export const teamsMockUtils = {
   /**
-   * Generates mock books list with optional filtering and sorting
+   * Generates mock teams list with optional filtering and sorting
    * @param {object} c - Hono context
-   * @param {string} genre - Optional genre filter
+   * @param {string} league - Optional league filter
    * @param {string} sort - Optional sort parameter
    * @returns {Response} Mock API response
    */
-  getBooksList: async (c, genre, sort) => {
+  getTeamsList: async (c, league, sort) => {
     let results = [...c.env.MOCK_DATA];
 
-    // Apply genre filter if provided
-    if (genre) {
-      results = results.filter((book) => book.genre === genre);
+    // Apply league filter if provided
+    if (league) {
+      results = results.filter((team) => team.league_name === league);
     }
 
     // Apply sorting if provided
     if (sort) {
       switch (sort) {
-        case "title_asc":
-          results.sort((a, b) => a.title.localeCompare(b.title));
+        case "name_asc":
+          results.sort((a, b) => a.name.localeCompare(b.name));
           break;
-        case "title_desc":
-          results.sort((a, b) => b.title.localeCompare(a.title));
+        case "name_desc":
+          results.sort((a, b) => b.name.localeCompare(a.name));
           break;
-        case "author_asc":
-          results.sort((a, b) => a.author.localeCompare(b.author));
+        case "country_asc":
+          results.sort((a, b) => a.country.localeCompare(b.country));
           break;
-        case "author_desc":
-          results.sort((a, b) => b.author.localeCompare(a.author));
+        case "country_desc":
+          results.sort((a, b) => b.country.localeCompare(a.country));
           break;
         default:
           // Default sort, no change needed
@@ -119,27 +150,27 @@ export const booksMockUtils = {
     }
 
     return Response.json({
-      books: results,
+      teams: results,
       source: "mock",
     });
   },
 
   /**
-   * Generates mock book detail response
+   * Generates mock team detail response
    * @param {object} c - Hono context
-   * @param {string} bookId - Book ID to fetch
+   * @param {string} teamId - Team ID to fetch
    * @returns {Response} Mock API response
    */
-  getBookDetail: async (c, bookId) => {
-    const bookIdNum = parseInt(bookId, 10);
-    const book = c.env.MOCK_DATA.find((book) => book.id === bookIdNum);
+  getTeamDetail: async (c, teamId) => {
+    const teamIdNum = parseInt(teamId, 10);
+    const team = c.env.MOCK_DATA.find((team) => team.id === teamIdNum);
 
-    if (!book) {
-      return Response.json({ error: "Book not found" }, { status: 404 });
+    if (!team) {
+      return Response.json({ error: "Team not found" }, { status: 404 });
     }
 
     return Response.json({
-      book,
+      team,
       source: "mock",
     });
   },

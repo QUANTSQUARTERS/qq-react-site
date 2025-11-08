@@ -118,19 +118,19 @@ p {
   @apply bg-white rounded-lg border border-gray-200 p-6 transition-all hover:border-gray-300;
 }
 
-.book-card {
+.team-card {
   @apply bg-white rounded-lg overflow-hidden border border-gray-200 transition-all hover:border-gray-500;
 }
 
-.book-card-image {
-  @apply h-60 overflow-hidden;
+.team-card-image {
+  @apply h-60 overflow-hidden bg-gray-50;
 }
 
-.book-card-image img {
+.team-card-image img {
   @apply object-contain;
 }
 
-.book-card-content {
+.team-card-content {
   @apply p-5 space-y-3;
 }
 

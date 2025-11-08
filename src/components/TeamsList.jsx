@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import BookCard from "./BookCard";
+import TeamCard from "./TeamCard";
 
-function useBooks(filter, sortBy) {
-  const [books, setBooks] = useState([]);
+function useTeams(filter, sortBy) {
+  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBooks = async () => {
+    const fetchTeams = async () => {
       try {
         const params = new URLSearchParams();
-        if (filter) params.append("genre", filter);
+        if (filter) params.append("league", filter);
         if (sortBy) params.append("sort", sortBy);
 
-        const url = `/api/books${params.toString() ? `?${params.toString()}` : ""}`;
+        const url = `/api/teams${params.toString() ? `?${params.toString()}` : ""}`;
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -22,32 +22,32 @@ function useBooks(filter, sortBy) {
 
         const data = await response.json();
 
-        if (!data.books?.length) {
-          console.error("No books data found:", data);
-          setBooks([]);
+        if (!data.teams?.length) {
+          console.error("No teams data found:", data);
+          setTeams([]);
         } else {
-          setBooks(data.books);
+          setTeams(data.teams);
         }
       } catch (error) {
-        console.error("Error loading books:", error);
+        console.error("Error loading teams:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBooks();
+    fetchTeams();
   }, [filter, sortBy]);
 
-  return { books, loading };
+  return { teams, loading };
 }
 
-function BooksList({ filter, onSelectBook }) {
+function TeamsList({ filter, onSelectTeam }) {
   const navigate = useNavigate();
   const [sortBy, setSortBy] = useState("");
-  const { books, loading } = useBooks(filter, sortBy);
+  const { teams, loading } = useTeams(filter, sortBy);
 
-  const handleBookSelect = (bookId) => {
-    onSelectBook ? onSelectBook(bookId) : navigate(`/book/${bookId}`);
+  const handleTeamSelect = (teamId) => {
+    onSelectTeam ? onSelectTeam(teamId) : navigate(`/team/${teamId}`);
   };
   const handleSortChange = (e) => {
     setSortBy(e.target.value);
@@ -70,19 +70,19 @@ function BooksList({ filter, onSelectBook }) {
           onChange={handleSortChange}
         >
           <option value="">Sort by...</option>
-          <option value="title_asc">Title (A-Z)</option>
-          <option value="title_desc">Title (Z-A)</option>
-          <option value="author_asc">Author (A-Z)</option>
-          <option value="author_desc">Author (Z-A)</option>
+          <option value="name_asc">Name (A-Z)</option>
+          <option value="name_desc">Name (Z-A)</option>
+          <option value="country_asc">Country (A-Z)</option>
+          <option value="country_desc">Country (Z-A)</option>
         </select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {books.map((book) => (
-          <BookCard
-            key={book.id}
-            book={book}
-            onClick={() => handleBookSelect(book.id)}
+        {teams.map((team) => (
+          <TeamCard
+            key={team.id}
+            team={team}
+            onClick={() => handleTeamSelect(team.id)}
           />
         ))}
       </div>
@@ -90,4 +90,5 @@ function BooksList({ filter, onSelectBook }) {
   );
 }
 
-export default BooksList;
+export default TeamsList;
+

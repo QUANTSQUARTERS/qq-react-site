@@ -1,24 +1,108 @@
--- Create books table if it doesn't exist
-CREATE TABLE IF NOT EXISTS books (
+-- Create leagues table
+CREATE TABLE IF NOT EXISTS leagues (
     id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    author VARCHAR(255) NOT NULL,
-    description TEXT,
-    image_url VARCHAR(255),
-    genre VARCHAR(50) DEFAULT 'Unknown',
+    name VARCHAR(255) NOT NULL,
+    country VARCHAR(100),
+    logo_url VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create teams table
+CREATE TABLE IF NOT EXISTS teams (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    league_id INTEGER REFERENCES leagues(id),
+    country VARCHAR(100),
+    logo_url VARCHAR(255),
+    founded_year INTEGER,
+    stadium VARCHAR(255),
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
--- Insert books data with consolidated genres
-INSERT INTO books (id, title, author, description, image_url, genre) VALUES
-(1, 'The Brothers Karamazov', 'Fyodor Dostoevsky', 'A passionate philosophical novel set in 19th-century Russia, which explores ethical debates of God, free will, and morality.', '/images/books/brothers-karamazov.jpg', 'Literary Fiction'),
-(2, 'East of Eden', 'John Steinbeck', 'A multigenerational family saga set in the Salinas Valley, California, exploring themes of good and evil through the intertwined stories of two families.', '/images/books/east-of-eden.jpg', 'Literary Fiction'),
-(3, 'The Fifth Season', 'N.K. Jemisin', 'Set in a world where catastrophic climate change occurs regularly, this novel follows a woman searching for her daughter while navigating a society divided by powers.', '/images/books/fifth-season.jpg', 'Science Fiction & Fantasy'),
-(4, 'Jane Eyre', 'Charlotte Brontë', 'A novel about a strong-willed orphan who becomes a governess, falls in love with her employer, and discovers his dark secret.', '/images/books/jane-eyre.jpg', 'Literary Fiction'),
-(5, 'Anna Karenina', 'Leo Tolstoy', 'A complex novel of family life among the Russian aristocracy, focusing on an adulterous affair between Anna Karenina and Count Vronsky.', '/images/books/anna-karenina.jpg', 'Literary Fiction'),
-(6, 'Giovanni''s Room', 'James Baldwin', 'A groundbreaking novel that follows an American man living in Paris as he grapples with his sexual identity and relationships.', '/images/books/giovannis-room.jpg', 'Historical Fiction'),
-(7, 'My Brilliant Friend', 'Elena Ferrante', 'The first novel in the Neapolitan quartet that traces the friendship between Elena and Lila, from their childhood in a poor Naples neighborhood through their diverging paths in life.', '/images/books/my-brilliant-friend.jpg', 'Literary Fiction'),
-(8, 'The Remains of the Day', 'Kazuo Ishiguro', 'The story of an English butler reflecting on his life of service and missed opportunities as he takes a road trip through the countryside.', '/images/books/remains-of-the-day.jpg', 'Historical Fiction'),
-(9, 'The Left Hand of Darkness', 'Ursula K. Le Guin', 'A science fiction novel that follows an envoy sent to convince the ambisexual people of the planet Gethen to join an interplanetary collective.', '/images/books/left-hand-of-darkness.jpg', 'Science Fiction & Fantasy');
+-- Create matches table
+CREATE TABLE IF NOT EXISTS matches (
+    id SERIAL PRIMARY KEY,
+    home_team_id INTEGER REFERENCES teams(id),
+    away_team_id INTEGER REFERENCES teams(id),
+    league_id INTEGER REFERENCES leagues(id),
+    match_date TIMESTAMP WITH TIME ZONE,
+    home_score INTEGER,
+    away_score INTEGER,
+    status VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create players table
+CREATE TABLE IF NOT EXISTS players (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    team_id INTEGER REFERENCES teams(id),
+    position VARCHAR(50),
+    nationality VARCHAR(100),
+    date_of_birth DATE,
+    jersey_number INTEGER,
+    photo_url VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create team_statistics table
+CREATE TABLE IF NOT EXISTS team_statistics (
+    id SERIAL PRIMARY KEY,
+    team_id INTEGER REFERENCES teams(id),
+    league_id INTEGER REFERENCES leagues(id),
+    season VARCHAR(20),
+    matches_played INTEGER DEFAULT 0,
+    wins INTEGER DEFAULT 0,
+    draws INTEGER DEFAULT 0,
+    losses INTEGER DEFAULT 0,
+    goals_for INTEGER DEFAULT 0,
+    goals_against INTEGER DEFAULT 0,
+    points INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert sample leagues
+INSERT INTO leagues (id, name, country, logo_url) VALUES
+(1, 'Premier League', 'England', '/images/leagues/premier-league.png'),
+(2, 'La Liga', 'Spain', '/images/leagues/la-liga.png'),
+(3, 'Serie A', 'Italy', '/images/leagues/serie-a.png'),
+(4, 'Bundesliga', 'Germany', '/images/leagues/bundesliga.png'),
+(5, 'Ligue 1', 'France', '/images/leagues/ligue-1.png');
+
+-- Insert sample teams
+INSERT INTO teams (id, name, league_id, country, logo_url, founded_year, stadium, description) VALUES
+(1, 'Manchester United', 1, 'England', '/images/teams/manchester-united.png', 1878, 'Old Trafford', 'One of the most successful clubs in English football history, with a rich tradition and global fanbase.'),
+(2, 'Liverpool', 1, 'England', '/images/teams/liverpool.png', 1892, 'Anfield', 'A historic club known for its passionate supporters and attacking style of play.'),
+(3, 'Manchester City', 1, 'England', '/images/teams/manchester-city.png', 1880, 'Etihad Stadium', 'Modern powerhouse with state-of-the-art facilities and recent domestic dominance.'),
+(4, 'Real Madrid', 2, 'Spain', '/images/teams/real-madrid.png', 1902, 'Santiago Bernabéu', 'The most successful club in European competition history with 14 Champions League titles.'),
+(5, 'Barcelona', 2, 'Spain', '/images/teams/barcelona.png', 1899, 'Camp Nou', 'Famous for its tiki-taka style and producing some of the world''s greatest players.'),
+(6, 'AC Milan', 3, 'Italy', '/images/teams/ac-milan.png', 1899, 'San Siro', 'One of Italy''s most successful clubs with a rich European history.'),
+(7, 'Juventus', 3, 'Italy', '/images/teams/juventus.png', 1897, 'Allianz Stadium', 'Record-holding Serie A champions with a storied legacy in Italian football.'),
+(8, 'Bayern Munich', 4, 'Germany', '/images/teams/bayern-munich.png', 1900, 'Allianz Arena', 'The dominant force in German football with consistent Champions League success.'),
+(9, 'Paris Saint-Germain', 5, 'France', '/images/teams/psg.png', 1970, 'Parc des Princes', 'French giants with significant investment and star-studded squads.');
+
+-- Insert sample matches
+INSERT INTO matches (id, home_team_id, away_team_id, league_id, match_date, home_score, away_score, status) VALUES
+(1, 1, 2, 1, '2024-01-15 15:00:00+00', 2, 1, 'finished'),
+(2, 3, 1, 1, '2024-01-20 17:30:00+00', 3, 2, 'finished'),
+(3, 4, 5, 2, '2024-01-18 20:00:00+00', 1, 1, 'finished'),
+(4, 6, 7, 3, '2024-01-22 18:00:00+00', 2, 0, 'finished'),
+(5, 8, 9, 4, '2024-01-25 19:30:00+00', 4, 1, 'finished');
+
+-- Insert sample team statistics
+INSERT INTO team_statistics (team_id, league_id, season, matches_played, wins, draws, losses, goals_for, goals_against, points) VALUES
+(1, 1, '2023-24', 20, 12, 5, 3, 35, 20, 41),
+(2, 1, '2023-24', 20, 11, 6, 3, 38, 22, 39),
+(3, 1, '2023-24', 20, 14, 4, 2, 42, 18, 46),
+(4, 2, '2023-24', 20, 15, 3, 2, 45, 15, 48),
+(5, 2, '2023-24', 20, 13, 5, 2, 40, 19, 44),
+(6, 3, '2023-24', 20, 10, 7, 3, 32, 21, 37),
+(7, 3, '2023-24', 20, 12, 5, 3, 36, 23, 41),
+(8, 4, '2023-24', 20, 16, 2, 2, 48, 16, 50),
+(9, 5, '2023-24', 20, 14, 4, 2, 44, 20, 46);
