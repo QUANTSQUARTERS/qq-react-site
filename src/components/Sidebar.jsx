@@ -41,7 +41,7 @@ function Sidebar({ leagues, activeLeague, counts }) {
             >
               {league.name}
               {counts && (
-                <span className="ml-2 text-xs text-gray-900">
+                <span className="ml-2 text-xs text-gray-400">
                   ({league.count})
                 </span>
               )}
@@ -71,25 +71,25 @@ function Sidebar({ leagues, activeLeague, counts }) {
       </nav>
 
       <div className="mt-auto pt-6 px-6">
-        <div className="text-xs text-gray-900">
+        <div className="text-xs text-gray-400">
           Powered by
           <br />
           <a
             href="https://cloudflare.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-800 hover:underline"
+            className="text-[#00d4ff] hover:text-[#00b8e6] hover:underline transition-colors"
           >
             Cloudflare
           </a>
           <br />
           <a
-            href="https://www.football-data-api.com"
+            href="https://footystats.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-800 hover:underline"
+            className="text-[#00d4ff] hover:text-[#00b8e6] hover:underline transition-colors"
           >
-            Football Data API
+            FootyStats API
           </a>
         </div>
       </div>

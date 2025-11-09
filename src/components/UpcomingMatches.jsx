@@ -2,21 +2,23 @@ import { useState, useEffect } from "react";
 
 function UpcomingMatches() {
   const [leagues, setLeagues] = useState([]);
-  const [selectedSeason, setSelectedSeason] = useState(null);
+  const [selectedLeague, setSelectedLeague] = useState(null);
   const [matches, setMatches] = useState([]);
   const [filteredMatches, setFilteredMatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // all, scheduled, finished
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Load leagues on component mount
   useEffect(() => {
     const fetchLeagues = async () => {
       try {
-        const response = await fetch("/api/football-data/leagues");
+        const response = await fetch("/api/footystats/leagues");
         if (!response.ok) throw new Error("Failed to fetch leagues");
         const data = await response.json();
-        setLeagues(data.leagues || []);
+        if (data.success && data.leagues) {
+          setLeagues(data.leagues);
+        }
       } catch (error) {
         console.error("Error loading leagues:", error);
       }
@@ -24,9 +26,9 @@ function UpcomingMatches() {
     fetchLeagues();
   }, []);
 
-  // Load matches when season is selected
+  // Load matches when league is selected
   useEffect(() => {
-    if (!selectedSeason) {
+    if (!selectedLeague) {
       setMatches([]);
       setFilteredMatches([]);
       return;
@@ -36,7 +38,7 @@ function UpcomingMatches() {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/football-data/leagues/${selectedSeason}/matches`
+          `/api/footystats/upcoming-matches/${selectedLeague}?season=2024`
         );
         if (!response.ok) throw new Error("Failed to fetch matches");
         const data = await response.json();
@@ -53,7 +55,7 @@ function UpcomingMatches() {
     };
 
     fetchMatches();
-  }, [selectedSeason]);
+  }, [selectedLeague]);
 
   // Filter matches based on search and status
   useEffect(() => {
@@ -82,32 +84,32 @@ function UpcomingMatches() {
     setFilteredMatches(filtered);
   }, [matches, searchTerm, statusFilter]);
 
-  const formatDate = (dateUnix) => {
-    if (!dateUnix) return "TBD";
-    const date = new Date(dateUnix * 1000);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const formatDate = (dateString) => {
+    if (!dateString) return "TBD";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return dateString;
+    }
   };
 
   const getStatusBadge = (status) => {
     const statusClasses = {
-      finished: "bg-green-100 text-green-800",
-      scheduled: "bg-blue-100 text-blue-800",
-      notstarted: "bg-gray-100 text-gray-800",
-      live: "bg-red-100 text-red-800",
+      finished: "status-finished",
+      scheduled: "status-scheduled",
+      notstarted: "status-scheduled",
+      live: "status-live",
     };
 
     return (
-      <span
-        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-          statusClasses[status] || "bg-gray-100 text-gray-800"
-        }`}
-      >
+      <span className={`status-badge ${statusClasses[status] || "status-scheduled"}`}>
         {status || "TBD"}
       </span>
     );
@@ -116,42 +118,40 @@ function UpcomingMatches() {
   return (
     <div className="space-y-6">
       <div className="card">
-        <h2 className="mb-4">Upcoming Matches</h2>
-
         {/* League Selection */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select League & Season
+          <label className="block text-sm font-semibold text-gray-300 mb-3">
+            Select League
           </label>
           <select
-            className="w-full md:w-1/2 py-2 px-4 border border-gray-300 rounded-md bg-white"
-            value={selectedSeason || ""}
-            onChange={(e) => setSelectedSeason(e.target.value)}
+            className="w-full md:w-1/2 py-3 px-4 rounded-lg"
+            value={selectedLeague || ""}
+            onChange={(e) => setSelectedLeague(e.target.value)}
           >
-            <option value="">-- Select a league season --</option>
+            <option value="">-- Select a league --</option>
             {leagues.map((league) => (
-              <option key={league.season_id} value={league.season_id}>
-                {league.league_name} - {league.year} ({league.country})
+              <option key={league.id} value={league.id}>
+                {league.name} ({league.country})
               </option>
             ))}
           </select>
         </div>
 
         {/* Filters */}
-        {selectedSeason && (
+        {selectedLeague && (
           <div className="mb-6 flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <input
                 type="text"
                 placeholder="Search by team or stadium..."
-                className="w-full py-2 px-4 border border-gray-300 rounded-md"
+                className="w-full py-3 px-4 rounded-lg"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <div>
               <select
-                className="py-2 px-4 border border-gray-300 rounded-md bg-white"
+                className="py-3 px-4 rounded-lg"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -166,10 +166,10 @@ function UpcomingMatches() {
         {/* Matches Table */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="h-10 w-10 border-2 border-blue-800 border-t-transparent rounded-full animate-spin"></div>
+            <div className="h-12 w-12 border-4 border-[#00d4ff] border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : filteredMatches.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl">
             <table className="data-table w-full">
               <thead>
                 <tr>
@@ -179,48 +179,42 @@ function UpcomingMatches() {
                   <th>Away Team</th>
                   <th>Stadium</th>
                   <th>Status</th>
-                  <th>Game Week</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredMatches.map((match) => (
-                  <tr key={match.id} className="hover:bg-gray-50">
-                    <td>{formatDate(match.date_unix)}</td>
-                    <td className="font-medium">{match.home_name || "TBD"}</td>
+                  <tr key={match.id} className="hover:bg-[#243447]">
+                    <td className="font-medium">{formatDate(match.date)}</td>
+                    <td className="font-semibold">{match.home_name || "TBD"}</td>
                     <td>
                       {match.status === "finished"
-                        ? `${match.homeGoalCount || 0} - ${
-                            match.awayGoalCount || 0
-                          }`
+                        ? `${match.homeGoalCount || 0} - ${match.awayGoalCount || 0}`
                         : "vs"}
                     </td>
-                    <td className="font-medium">{match.away_name || "TBD"}</td>
-                    <td className="text-sm text-gray-600">
+                    <td className="font-semibold">{match.away_name || "TBD"}</td>
+                    <td className="text-sm text-gray-400">
                       {match.stadium_name || "TBD"}
                     </td>
                     <td>{getStatusBadge(match.status)}</td>
-                    <td className="text-sm text-gray-600">
-                      {match.game_week || "N/A"}
-                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        ) : selectedSeason ? (
-          <div className="text-center py-20 text-gray-600">
+        ) : selectedLeague ? (
+          <div className="text-center py-20 text-gray-400">
             No matches found
             {searchTerm && " matching your search"}
           </div>
         ) : (
-          <div className="text-center py-20 text-gray-600">
-            Please select a league season to view matches
+          <div className="text-center py-20 text-gray-400">
+            Please select a league to view matches
           </div>
         )}
 
         {/* Results count */}
-        {selectedSeason && filteredMatches.length > 0 && (
-          <div className="mt-4 text-sm text-gray-600">
+        {selectedLeague && filteredMatches.length > 0 && (
+          <div className="mt-6 text-sm text-gray-400">
             Showing {filteredMatches.length} of {matches.length} matches
           </div>
         )}
@@ -230,4 +224,3 @@ function UpcomingMatches() {
 }
 
 export default UpcomingMatches;
-

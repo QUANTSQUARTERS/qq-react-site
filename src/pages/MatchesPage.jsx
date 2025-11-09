@@ -35,6 +35,12 @@ function MatchesPage() {
     <div className="layout">
       <Sidebar leagues={leagues} activeLeague={null} counts />
       <main className="main-content">
+        <div className="page-header">
+          <h1>Upcoming Matches</h1>
+          <p className="text-gray-300">
+            Browse and search upcoming soccer matches by league
+          </p>
+        </div>
         <UpcomingMatches />
       </main>
     </div>

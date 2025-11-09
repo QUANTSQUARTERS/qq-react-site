@@ -137,7 +137,7 @@ function App() {
 
         <div className="page-header">
           <h1>{activeLeague ? `${activeLeague} Teams` : "Soccer Analytics"}</h1>
-          <p className="text-gray-900">
+          <p className="text-gray-300">
             {activeLeague
               ? `Explore teams in ${activeLeague}`
               : "Discover teams, leagues, and soccer statistics"}
@@ -150,12 +150,12 @@ function App() {
         {teamId ? (
           loading ? (
             <div className="flex justify-center items-center py-20">
-              <div className="h-10 w-10 border-2 border-blue-800 border-t-transparent rounded-full animate-spin"></div>
+              <div className="h-12 w-12 border-4 border-[#00d4ff] border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : teamDetail ? (
             <TeamDetail teamData={teamDetail} />
           ) : (
-            <div className="text-center py-20 text-gray-600">
+            <div className="text-center py-20 text-gray-400">
               Error loading team details
             </div>
           )

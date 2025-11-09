@@ -30,6 +30,6 @@
   },
   "upload_source_maps": true,
   "vars": {
-    "FOOTBALL_DATA_API_KEY": "30710b2389e680d3fa1a8e0035225786f9808173bf8a37dabe82d6e986e3e4d7"
+    "FOOTYSTATS_API_KEY": "30710b2389e680d3fa1a8e0035225786f9808173bf8a37dabe82d6e986e3e4d7"
   }
 }

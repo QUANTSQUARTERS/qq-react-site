@@ -56,7 +56,7 @@ function TeamsList({ filter, onSelectTeam }) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <div className="h-10 w-10 border-2 border-blue-800 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-12 w-12 border-4 border-[#00d4ff] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -65,7 +65,7 @@ function TeamsList({ filter, onSelectTeam }) {
     <div className="space-y-6">
       <div className="flex justify-end">
         <select
-          className="py-2 px-4 border border-gray-300 rounded-md bg-white"
+          className="py-3 px-4 rounded-lg"
           value={sortBy}
           onChange={handleSortChange}
         >

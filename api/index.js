@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import postgres from "postgres";
 import teamsRouter from "./routes/teams";
 import teamRelatedRouter from "./routes/team-related";
-import footballDataRouter from "./routes/football-data";
+import footystatsRouter from "./routes/footystats";
 import { mockTeams } from "./lib/mockData";
 
 const app = new Hono();
@@ -43,7 +43,7 @@ app.use("*", async (c, next) => {
 
 app.route("/api/teams", teamsRouter);
 app.route("/api/teams/:id/related", teamRelatedRouter);
-app.route("/api/football-data", footballDataRouter);
+app.route("/api/footystats", footystatsRouter);
 
 // Catch-all route for static assets
 app.all("*", async (c) => {

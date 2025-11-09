@@ -35,6 +35,12 @@ function AnalyticsPage() {
     <div className="layout">
       <Sidebar leagues={leagues} activeLeague={null} counts />
       <main className="main-content">
+        <div className="page-header">
+          <h1>Soccer Analytics</h1>
+          <p className="text-gray-300">
+            Deep dive into xG, goals, and performance distributions
+          </p>
+        </div>
         <Analytics />
       </main>
     </div>

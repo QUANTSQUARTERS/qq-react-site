@@ -12,7 +12,7 @@ import {
 
 function Analytics() {
   const [leagues, setLeagues] = useState([]);
-  const [selectedSeason, setSelectedSeason] = useState(null);
+  const [selectedLeague, setSelectedLeague] = useState(null);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState(null);
@@ -21,10 +21,12 @@ function Analytics() {
   useEffect(() => {
     const fetchLeagues = async () => {
       try {
-        const response = await fetch("/api/football-data/leagues");
+        const response = await fetch("/api/footystats/leagues");
         if (!response.ok) throw new Error("Failed to fetch leagues");
         const data = await response.json();
-        setLeagues(data.leagues || []);
+        if (data.success && data.leagues) {
+          setLeagues(data.leagues);
+        }
       } catch (error) {
         console.error("Error loading leagues:", error);
       }
@@ -32,9 +34,9 @@ function Analytics() {
     fetchLeagues();
   }, []);
 
-  // Load matches and process data when season is selected
+  // Load matches and process data when league is selected
   useEffect(() => {
-    if (!selectedSeason) {
+    if (!selectedLeague) {
       setMatches([]);
       setChartData(null);
       return;
@@ -44,7 +46,7 @@ function Analytics() {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/football-data/leagues/${selectedSeason}/matches`
+          `/api/footystats/league-matches/${selectedLeague}?season=2024`
         );
         if (!response.ok) throw new Error("Failed to fetch matches");
         const data = await response.json();
@@ -61,7 +63,7 @@ function Analytics() {
     };
 
     fetchMatches();
-  }, [selectedSeason]);
+  }, [selectedLeague]);
 
   const processMatchData = (matchesData) => {
     // Filter only finished matches for accurate statistics
@@ -111,8 +113,8 @@ function Analytics() {
     const awayData = [];
 
     matches.forEach((match) => {
-      const homeValue = match[homeKey] || 0;
-      const awayValue = match[awayKey] || 0;
+      const homeValue = parseFloat(match[homeKey]) || 0;
+      const awayValue = parseFloat(match[awayKey]) || 0;
 
       homeData.push(homeValue);
       awayData.push(awayValue);
@@ -130,11 +132,13 @@ function Analytics() {
         (v) => v >= i && v < i + binSize
       ).length;
 
-      bins.push({
-        range: binLabel,
-        home: homeCount,
-        away: awayCount,
-      });
+      if (homeCount > 0 || awayCount > 0) {
+        bins.push({
+          range: binLabel,
+          home: homeCount,
+          away: awayCount,
+        });
+      }
     }
 
     return bins;
@@ -153,10 +157,10 @@ function Analytics() {
     };
 
     matches.forEach((match) => {
-      const homeGoals = match.homeGoalCount || 0;
-      const awayGoals = match.awayGoalCount || 0;
-      const homeXG = match.team_a_xg || 0;
-      const awayXG = match.team_b_xg || 0;
+      const homeGoals = parseInt(match.homeGoalCount) || 0;
+      const awayGoals = parseInt(match.awayGoalCount) || 0;
+      const homeXG = parseFloat(match.team_a_xg) || 0;
+      const awayXG = parseFloat(match.team_b_xg) || 0;
 
       stats.homeGoals += homeGoals;
       stats.awayGoals += awayGoals;
@@ -180,8 +184,8 @@ function Analytics() {
       },
       {
         category: "xG",
-        home: stats.homeXG.toFixed(2),
-        away: stats.awayXG.toFixed(2),
+        home: parseFloat(stats.homeXG.toFixed(2)),
+        away: parseFloat(stats.awayXG.toFixed(2)),
       },
       {
         category: "Wins",
@@ -201,7 +205,7 @@ function Analytics() {
 
     matches.forEach((match) => {
       const totalGoals =
-        (match.homeGoalCount || 0) + (match.awayGoalCount || 0);
+        (parseInt(match.homeGoalCount) || 0) + (parseInt(match.awayGoalCount) || 0);
       distribution[totalGoals] = (distribution[totalGoals] || 0) + 1;
     });
 
@@ -215,16 +219,16 @@ function Analytics() {
 
   const calculateXgVsGoals = (matches) => {
     const data = matches.map((match) => {
-      const homeXG = match.team_a_xg || 0;
-      const awayXG = match.team_b_xg || 0;
-      const homeGoals = match.homeGoalCount || 0;
-      const awayGoals = match.awayGoalCount || 0;
+      const homeXG = parseFloat(match.team_a_xg) || 0;
+      const awayXG = parseFloat(match.team_b_xg) || 0;
+      const homeGoals = parseInt(match.homeGoalCount) || 0;
+      const awayGoals = parseInt(match.awayGoalCount) || 0;
 
       const homeName = match.home_name || "Home";
       const awayName = match.away_name || "Away";
 
       return {
-        match: `${homeName.substring(0, 15)} vs ${awayName.substring(0, 15)}`,
+        match: `${homeName.substring(0, 12)} vs ${awayName.substring(0, 12)}`,
         homeXG: parseFloat(homeXG.toFixed(2)),
         homeGoals,
         awayXG: parseFloat(awayXG.toFixed(2)),
@@ -238,25 +242,41 @@ function Analytics() {
     return data.sort((a, b) => b.totalGoals - a.totalGoals).slice(0, 20);
   };
 
+  // Custom tooltip for charts
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-[#1a2332] border border-[#2d3748] rounded-lg p-3 shadow-lg">
+          <p className="text-white font-semibold mb-2">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {entry.value}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="card">
-        <h2 className="mb-4">Soccer Analytics & Distributions</h2>
 
         {/* League Selection */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select League & Season
+          <label className="block text-sm font-semibold text-gray-300 mb-3">
+            Select League
           </label>
           <select
-            className="w-full md:w-1/2 py-2 px-4 border border-gray-300 rounded-md bg-white"
-            value={selectedSeason || ""}
-            onChange={(e) => setSelectedSeason(e.target.value)}
+            className="w-full md:w-1/2 py-3 px-4 rounded-lg"
+            value={selectedLeague || ""}
+            onChange={(e) => setSelectedLeague(e.target.value)}
           >
-            <option value="">-- Select a league season --</option>
+            <option value="">-- Select a league --</option>
             {leagues.map((league) => (
-              <option key={league.season_id} value={league.season_id}>
-                {league.league_name} - {league.year} ({league.country})
+              <option key={league.id} value={league.id}>
+                {league.name} ({league.country})
               </option>
             ))}
           </select>
@@ -264,26 +284,22 @@ function Analytics() {
 
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="h-10 w-10 border-2 border-blue-800 border-t-transparent rounded-full animate-spin"></div>
+            <div className="h-12 w-12 border-4 border-[#00d4ff] border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : chartData ? (
           <div className="space-y-8">
             {/* Summary Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="metrics-container">
               <div className="metric-card">
                 <div className="metric-value">{chartData.totalMatches}</div>
                 <div className="metric-label">Total Matches</div>
               </div>
               <div className="metric-card">
-                <div className="metric-value">
-                  {chartData.homeAwayStats[0].home}
-                </div>
+                <div className="metric-value">{chartData.homeAwayStats[0].home}</div>
                 <div className="metric-label">Home Goals</div>
               </div>
               <div className="metric-card">
-                <div className="metric-value">
-                  {chartData.homeAwayStats[0].away}
-                </div>
+                <div className="metric-value">{chartData.homeAwayStats[0].away}</div>
                 <div className="metric-label">Away Goals</div>
               </div>
               <div className="metric-card">
@@ -301,99 +317,101 @@ function Analytics() {
             </div>
 
             {/* Home vs Away Statistics */}
-            <div>
+            <div className="card">
               <h3 className="mb-4">Home vs Away Statistics</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData.homeAwayStats}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                  <XAxis dataKey="category" stroke="#a0aec0" />
+                  <YAxis stroke="#a0aec0" />
+                  <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="home" fill="#3b82f6" name="Home" />
-                  <Bar dataKey="away" fill="#ef4444" name="Away" />
+                  <Bar dataKey="home" fill="#00d4ff" name="Home" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="away" fill="#ed8936" name="Away" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
             {/* xG Distribution */}
-            <div>
+            <div className="card">
               <h3 className="mb-4">Expected Goals (xG) Distribution</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData.xgDistribution}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="range" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                  <XAxis dataKey="range" stroke="#a0aec0" />
+                  <YAxis stroke="#a0aec0" />
+                  <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="home" fill="#3b82f6" name="Home xG" />
-                  <Bar dataKey="away" fill="#ef4444" name="Away xG" />
+                  <Bar dataKey="home" fill="#00d4ff" name="Home xG" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="away" fill="#ed8936" name="Away xG" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
             {/* Goals Distribution */}
-            <div>
+            <div className="card">
               <h3 className="mb-4">Goals Distribution</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData.goalsDistribution}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="range" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                  <XAxis dataKey="range" stroke="#a0aec0" />
+                  <YAxis stroke="#a0aec0" />
+                  <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="home" fill="#3b82f6" name="Home Goals" />
-                  <Bar dataKey="away" fill="#ef4444" name="Away Goals" />
+                  <Bar dataKey="home" fill="#00d4ff" name="Home Goals" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="away" fill="#ed8936" name="Away Goals" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
             {/* Total Goals Distribution */}
-            <div>
+            <div className="card">
               <h3 className="mb-4">Total Goals per Match Distribution</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData.totalGoalsDistribution}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="goals" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#10b981" name="Matches" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                  <XAxis dataKey="goals" stroke="#a0aec0" />
+                  <YAxis stroke="#a0aec0" />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="count" fill="#48bb78" name="Matches" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
             {/* xG vs Goals Comparison */}
-            <div>
-              <h3 className="mb-4">xG vs Actual Goals (Top 20 Matches by Total Goals)</h3>
-              <div className="overflow-x-auto">
-                <ResponsiveContainer width="100%" minWidth={800} height={400}>
-                  <BarChart data={chartData.xgVsGoals} margin={{ bottom: 80 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="match" 
-                      angle={-45} 
-                      textAnchor="end" 
-                      height={120}
-                      interval={0}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="totalXG" fill="#f59e0b" name="Total xG" />
-                    <Bar dataKey="totalGoals" fill="#10b981" name="Total Goals" />
-                  </BarChart>
-                </ResponsiveContainer>
+            {chartData.xgVsGoals.length > 0 && (
+              <div className="card">
+                <h3 className="mb-4">xG vs Actual Goals (Top 20 Matches)</h3>
+                <div className="overflow-x-auto">
+                  <ResponsiveContainer width="100%" minWidth={800} height={400}>
+                    <BarChart data={chartData.xgVsGoals} margin={{ bottom: 80 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                      <XAxis 
+                        dataKey="match" 
+                        angle={-45} 
+                        textAnchor="end" 
+                        height={120}
+                        interval={0}
+                        tick={{ fontSize: 10, fill: "#a0aec0" }}
+                      />
+                      <YAxis stroke="#a0aec0" />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar dataKey="totalXG" fill="#ed8936" name="Total xG" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="totalGoals" fill="#48bb78" name="Total Goals" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-            </div>
+            )}
           </div>
-        ) : selectedSeason ? (
-          <div className="text-center py-20 text-gray-600">
+        ) : selectedLeague ? (
+          <div className="text-center py-20 text-gray-400">
             No finished matches found for analytics
           </div>
         ) : (
-          <div className="text-center py-20 text-gray-600">
-            Please select a league season to view analytics
+          <div className="text-center py-20 text-gray-400">
+            Please select a league to view analytics
           </div>
         )}
       </div>
@@ -402,4 +420,3 @@ function Analytics() {
 }
 
 export default Analytics;
-
